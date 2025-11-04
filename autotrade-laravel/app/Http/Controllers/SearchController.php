@@ -184,4 +184,21 @@ class SearchController extends Controller
 
         return response()->json($query->limit(50)->get());
     }
+	public function show(int $id)
+    {
+        $listing = DB::table('listings as l')
+            ->join('vehicles as v','v.id','=','l.vehicle_id')
+            ->select(
+                'l.*',
+                'v.make','v.model','v.year','v.body_type','v.drivetrain','v.fuel_type',    'v.transmission'
+            )
+            ->where('l.id',$id)
+            ->first();
+
+        if (!$listing) {
+            abort(404);
+        }
+    
+        return view('listing', ['l' => $listing]);
+    }
 }

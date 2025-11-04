@@ -19,24 +19,40 @@
 <body class="bg-light">
 
 <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
-  <div class="container d-flex justify-content-between">
+  <div class="container d-flex justify-content-between align-items-center">
     <a class="navbar-brand fw-bold" href="/">AUTOTRADE</a>
-    <a href="{{ route('compare') }}" class="btn btn-outline-light btn-sm position-relative">
-      Compare
-      <span id="compareCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-        {{ count(session('compare_ids', [])) }}
-      </span>
-    </a>
+
+    <div class="d-flex gap-2 align-items-center">
+      @auth
+        <a href="{{ route('buyer.dashboard') }}" class="btn btn-outline-light btn-sm">Buyer</a>
+        <a href="{{ route('seller.dashboard') }}" class="btn btn-outline-light btn-sm">Seller</a>
+        <a href="{{ route('listings.create') }}" class="btn btn-primary btn-sm">List a Vehicle</a>
+
+        <span class="text-white-50 small ms-2 d-none d-md-inline">Hi, {{ Auth::user()->display_name ?? Auth::user()->email }}</span>
+        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+          @csrf
+          <button type="submit" class="btn btn-light btn-sm ms-2">Logout</button>
+        </form>
+      @else
+        <a href="{{ route('login') }}" class="btn btn-outline-light btn-sm">Login</a>
+        <a href="{{ route('register') }}" class="btn btn-light btn-sm">Sign Up</a>
+      @endauth
+
+      <a href="{{ route('compare') }}" class="btn btn-outline-light btn-sm position-relative ms-2">
+        Compare
+        <span id="compareCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+          {{ count(session('compare_ids', [])) }}
+        </span>
+      </a>
+    </div>
   </div>
 </nav>
 
 <main class="container py-4">
-
   {{-- SEARCH / FILTERS --}}
   <form id="filterForm" method="GET" action="{{ route('home') }}" class="card shadow-sm mb-4">
     <div class="card-body">
       <div class="row g-3 align-items-end">
-
         <div class="col-12">
           <label class="form-label fw-semibold" for="q">Search</label>
           <input type="text" id="q" name="q" value="{{ request('q') }}" class="form-control" placeholder="Search by make, model, title, or seller">
@@ -275,7 +291,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
   let timer;
 
-  // Seed compareIds from session
   window.compareIds = @json(session('compare_ids', []));
 
   function updateCompareBadge() {
@@ -309,11 +324,9 @@ document.addEventListener("DOMContentLoaded", () => {
     window.compareIds = data.ids || [];
     updateCompareBadge();
     refreshDrawer();
-    // Update all buttons for this id
     document.querySelectorAll(`[data-compare-id="${id}"]`).forEach(b => setBtnState(b, window.compareIds.includes(id)));
   }
 
-  // Delegated click for compare buttons
   document.body.addEventListener('click', (e) => {
     const btn = e.target.closest('.compare-btn');
     if (btn) {
@@ -342,83 +355,4 @@ document.addEventListener("DOMContentLoaded", () => {
           <div>
             <div class="fw-semibold">${item.year} ${item.make} ${item.model}</div>
             <div class="text-muted small">${item.title ?? ''}</div>
-            <div class="mt-1 d-flex gap-2 flex-wrap">
-              <span class="badge bg-light text-dark">Price: $${Number(item.price).toLocaleString()}</span>
-              <span class="badge bg-light text-dark">Mileage: ${Number(item.mileage).toLocaleString()} mi</span>
-              <span class="badge bg-secondary">${item.body_type ?? ''}</span>
-              <span class="badge bg-secondary">${item.drivetrain ?? ''}</span>
-              <span class="badge bg-secondary">${item.fuel_type ?? ''}</span>
-              <span class="badge bg-secondary">${item.transmission ?? ''}</span>
-            </div>
-          </div>
-          <button type="button"
-                  class="btn btn-outline-secondary btn-sm compare-btn ${selected ? 'compare-active' : ''}"
-                  data-compare-id="${item.id}">
-            ${selected ? 'Added' : 'Compare'}
-          </button>
-        </div>
-      `;
-      results.appendChild(card);
-    });
-  }
-
-  function scheduleFetch() {
-    clearTimeout(timer);
-    timer = setTimeout(fetchResults, 250);
-  }
-
-  // Sticky drawer helpers
-  function buildShareUrl() {
-    const ids = window.compareIds || [];
-    const base = "{{ url('/compare') }}";
-    return ids.length ? `${base}?ids=${ids.join(',')}` : base;
-  }
-
-  async function refreshDrawer() {
-    const ids = window.compareIds || [];
-    if (!ids.length) {
-      drawer.classList.remove('show');
-      drawerChips.innerHTML = '';
-      drawerCompareLink.setAttribute('href', buildShareUrl());
-      return;
-    }
-
-    // Fetch minimal details for chips
-    const res = await fetch(`{{ route('compare.summary') }}?ids=${ids.join(',')}`, { headers: { 'Accept': 'application/json' }});
-    const data = await res.json();
-
-    drawerChips.innerHTML = '';
-    data.forEach(item => {
-      const chip = document.createElement('span');
-      chip.className = 'chip';
-      chip.innerHTML = `${item.year} ${item.make} ${item.model}`;
-      drawerChips.appendChild(chip);
-    });
-
-    drawerCompareLink.setAttribute('href', buildShareUrl());
-    drawer.classList.add('show');
-  }
-
-  drawerClear.addEventListener('click', async () => {
-    const res = await fetch("{{ route('compare.clear') }}", {
-      method: 'POST',
-      headers: {'X-CSRF-TOKEN': csrf, 'Accept': 'text/html'}
-    });
-    window.compareIds = [];
-    updateCompareBadge();
-    refreshDrawer();
-    // Also refresh results so buttons reset
-    scheduleFetch();
-  });
-
-  form.addEventListener("input", scheduleFetch);
-  form.addEventListener("change", scheduleFetch);
-  form.addEventListener("submit", (e) => { e.preventDefault(); fetchResults(); });
-
-  updateCompareBadge();
-  refreshDrawer();
-});
-</script>
-
-</body>
-</html>
+            <div class="mt-1 d-flex gap-2
