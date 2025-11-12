@@ -12,7 +12,7 @@ class User extends Authenticatable
     protected $table = 'users';
     protected $fillable = ['role','name','email','password_hash'];
 
-    // important for legacy tables without created_at/updated_at
+    // legacy table usually lacks created_at/updated_at
     public $timestamps = false;
 
     public function getAuthPassword()

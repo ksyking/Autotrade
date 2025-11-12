@@ -5,18 +5,37 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function showRegister()
+    public function showAuth(Request $request)
     {
-        return view('auth.register');
+        // ?tab=login or ?tab=register
+        $tab = $request->query('tab', session('created') ? 'login' : 'login');
+        return view('auth.index', ['tab' => in_array($tab, ['login','register']) ? $tab : 'login']);
+    }
+
+    public function login(Request $request)
+    {
+        $data = $request->validate([
+            'email'    => ['required','email'],
+            'password' => ['required'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+        if (!$user || !Hash::check($data['password'], $user->password_hash)) {
+            throw ValidationException::withMessages(['auth' => 'Invalid email or password.']);
+        }
+
+        Auth::login($user);
+        return redirect()->route('autotrade.home');
     }
 
     public function register(Request $request)
     {
-        // Validate like your legacy checks
         $data = $request->validate([
             'role'     => ['required', Rule::in(['buyer','seller'])],
             'name'     => ['required','string','max:255'],
@@ -24,30 +43,22 @@ class AuthController extends Controller
             'password' => ['required','string','min:6'],
         ]);
 
-        try {
-            User::create([
-                'role'          => $data['role'],
-                'name'          => $data['name'],
-                'email'         => $data['email'],
-                // store into your existing password_hash column
-                'password_hash' => Hash::make($data['password']),
-            ]);
-        } catch (\Illuminate\Database\QueryException $e) {
-            // MySQL duplicate email code = 1062 (extra safety if unique rule missed it)
-            if (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1062) {
-                return back()
-                    ->withErrors(['email' => 'That email is already registered. Try logging in.'])
-                    ->withInput();
-            }
-            return back()
-                ->withErrors(['general' => 'Signup failed. Please try again.'])
-                ->withInput();
-        }
+        User::create([
+            'role'          => $data['role'],
+            'name'          => $data['name'],
+            'email'         => $data['email'],
+            'password_hash' => Hash::make($data['password']),
+        ]);
 
-        // Match your legacy flow: go to login after creating
-        return redirect()->route('login')->with('created', 1);
+        // send them back to the same page on the Login tab with a success flash
+        return redirect()->route('auth.page', ['tab' => 'login'])->with('created', 1);
     }
 
-    public function showLogin() { return view('auth.login'); }
-    public function login(Request $request) { /* ...your existing login from earlier... */ }
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('auth.page', ['tab' => 'login']);
+    }
 }
