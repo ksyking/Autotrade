@@ -55,54 +55,76 @@ class CompareController extends Controller
     }
 
     // Add item to compare (max 4)
-    public function add(Request $request)
-    {
-        $id  = (int) $request->input('id');
-        $ids = collect($request->session()->get('compare_ids', []));
+public function add(Request $request)
+{
+    // Accept JSON {id: ...} or form field "vehicle_id"
+    $id = (int) ($request->input('id') ?? $request->input('vehicle_id') ?? $request->query('id'));
 
-        if (!$ids->contains($id)) {
-            if ($ids->count() >= 4) {
-                return response()->json([
-                    'ok' => false,
-                    'reason' => 'full',
-                    'message' => 'You can compare up to 4 vehicles.',
-                    'ids' => $ids->values()->all()
-                ], 400);
-            }
-            $ids->push($id);
-            $request->session()->put('compare_ids', $ids->values()->all());
+    if (!$id) {
+        // If JSON was expected, return JSON; otherwise redirect back with a message
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => false, 'error' => 'missing_id'], 422);
         }
-
-        return response()->json([
-            'ok' => true,
-            'ids' => $ids->values()->all(),
-            'count' => $ids->count()
-        ]);
+        return back()->with('message', 'Missing vehicle id.');
     }
+
+    $ids = collect((array) session('compare_ids', []))
+        ->map(fn ($v) => (int) $v)
+        ->unique()
+        ->values()
+        ->all();
+
+    if (!in_array($id, $ids, true)) {
+        if (count($ids) >= 4) {
+            // Enforce max of 4
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'reason' => 'full', 'ids' => $ids], 422);
+            }
+            return back()->with('message', 'You can compare up to 4 vehicles.');
+        }
+        $ids[] = $id;
+    }
+
+    session(['compare_ids' => $ids]);
+
+    if ($request->expectsJson()) {
+        return response()->json(['ok' => true, 'ids' => $ids], 200);
+    }
+
+    return back()->with('message', 'Added to compare.');
+}
+
 
     // Remove item from compare
-    public function remove(Request $request)
-    {
-        $id  = (int) $request->input('id');
-        $ids = collect($request->session()->get('compare_ids', []))
-            ->reject(fn($v) => (int) $v === $id)
-            ->values();
+public function remove(Request $request)
+{
+    $id = (int) ($request->input('id') ?? $request->input('vehicle_id') ?? $request->query('id'));
 
-        $request->session()->put('compare_ids', $ids->all());
+    $ids = collect((array) session('compare_ids', []))
+        ->map(fn ($v) => (int) $v)
+        ->filter(fn ($v) => $v !== $id)
+        ->values()
+        ->all();
 
-        return response()->json([
-            'ok' => true,
-            'ids' => $ids->all(),
-            'count' => $ids->count()
-        ]);
+    session(['compare_ids' => $ids]);
+
+    if ($request->expectsJson()) {
+        return response()->json(['ok' => true, 'ids' => $ids], 200);
     }
 
+    return back()->with('message', 'Removed from compare.');
+}
     // Optional: clear all and redirect
-    public function clear(Request $request)
-    {
-        $request->session()->forget('compare_ids');
-        return redirect()->route('compare');
+public function clear(Request $request)
+{
+    session()->forget('compare_ids');
+
+    if ($request->expectsJson()) {
+        return response()->json(['ok' => true, 'ids' => []], 200);
     }
+
+    return back()->with('message', 'Compare list cleared.');
+}
 
     // NEW: JSON summary for sticky drawer chips
     public function summary(Request $request)
@@ -125,5 +147,10 @@ class CompareController extends Controller
             ->values();
 
         return response()->json($rows);
+    }
+    
+    public function show(\Illuminate\Http\Request $request)
+    {
+    return $this->index($request);
     }
 }

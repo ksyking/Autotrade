@@ -112,7 +112,6 @@ class SearchController extends Controller
 
     public function json(Request $request)
     {
-        // (Unchanged from earlier except for $sort support, already added previously)
         $q            = trim((string) $request->input('q', ''));
         $make         = trim((string) $request->input('make', ''));
         $model        = trim((string) $request->input('model', ''));
@@ -144,6 +143,7 @@ class SearchController extends Controller
             )
             ->where('listings.is_active', 1);
 
+        // Same filters as index()
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $like = "%{$q}%";
@@ -184,13 +184,14 @@ class SearchController extends Controller
 
         return response()->json($query->limit(50)->get());
     }
-	public function show(int $id)
+
+    public function show(int $id)
     {
         $listing = DB::table('listings as l')
             ->join('vehicles as v','v.id','=','l.vehicle_id')
             ->select(
                 'l.*',
-                'v.make','v.model','v.year','v.body_type','v.drivetrain','v.fuel_type',    'v.transmission'
+                'v.make','v.model','v.year','v.body_type','v.drivetrain','v.fuel_type','v.transmission'
             )
             ->where('l.id',$id)
             ->first();
@@ -198,7 +199,7 @@ class SearchController extends Controller
         if (!$listing) {
             abort(404);
         }
-    
+
         return view('listing', ['l' => $listing]);
     }
 }

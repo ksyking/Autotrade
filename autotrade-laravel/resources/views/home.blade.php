@@ -289,8 +289,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const drawerCompareLink = document.getElementById("drawerCompareLink");
   const drawerClear = document.getElementById("drawerClear");
   const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-  let timer;
 
+  // initialize from session
   window.compareIds = @json(session('compare_ids', []));
 
   function updateCompareBadge() {
@@ -303,19 +303,26 @@ document.addEventListener("DOMContentLoaded", () => {
     else { btn.classList.remove('compare-active'); btn.textContent = 'Compare'; }
   }
 
+  // --- SAFER: use FormData and guard refreshDrawer() so no JS error stops updates
   async function toggleCompare(id) {
-    const isSelected = window.compareIds.includes(id);
+    const isSelected = (window.compareIds || []).includes(id);
     const url = isSelected ? "{{ route('compare.remove') }}" : "{{ route('compare.add') }}";
+
+    const fd = new FormData();
+    fd.append('_token', csrf);
+    fd.append('id', id);
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: {'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', 'Accept': 'application/json'},
-      body: JSON.stringify({ id })
+      headers: { 'Accept': 'application/json' },
+      body: fd
     });
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
       if (data.reason === 'full') alert('You can compare up to 4 vehicles.');
+      else if (res.status === 419) alert('Session expired. Please refresh and try again.');
       else alert('Could not update compare list.');
       return;
     }
@@ -323,10 +330,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await res.json();
     window.compareIds = data.ids || [];
     updateCompareBadge();
-    refreshDrawer();
+    if (typeof refreshDrawer === 'function') refreshDrawer(); // guard it
     document.querySelectorAll(`[data-compare-id="${id}"]`).forEach(b => setBtnState(b, window.compareIds.includes(id)));
   }
 
+  // Click handler for the in-card Compare buttons
   document.body.addEventListener('click', (e) => {
     const btn = e.target.closest('.compare-btn');
     if (btn) {
@@ -335,24 +343,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  async function fetchResults() {
-    const params = new URLSearchParams(new FormData(form));
-    const response = await fetch(`/search-json?${params}`, { headers: { "Accept": "application/json" }});
-    const data = await response.json();
+  // Optional: Clear button in the drawer
+  if (drawerClear) {
+    drawerClear.addEventListener('click', async () => {
+      const fd = new FormData();
+      fd.append('_token', csrf);
+      const res = await fetch("{{ route('compare.clear') }}", {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: fd
+      });
+      if (res.ok) {
+        window.compareIds = [];
+        updateCompareBadge();
+        if (typeof refreshDrawer === 'function') refreshDrawer();
+        // also reset all compare buttons
+        document.querySelectorAll('.compare-btn').forEach(b => setBtnState(b, false));
+      } else {
+        alert('Could not clear compare list.');
+      }
+    });
+  }
 
-    results.innerHTML = "";
-    if (!data.length) {
-      results.innerHTML = `<p class="text-center text-muted">No results found.</p>`;
-      return;
-    }
+  // In case the session already had items when page loads
+  updateCompareBadge();
 
-    data.forEach((item) => {
-      const selected = (window.compareIds || []).includes(item.id);
-      const card = document.createElement("div");
-      card.className = "card shadow-sm";
-      card.innerHTML = `
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <div>
-            <div class="fw-semibold">${item.year} ${item.make} ${item.model}</div>
-            <div class="text-muted small">${item.title ?? ''}</div>
-            <div class="mt-1 d-flex gap-2
+  // If you later add an implementation for refreshDrawer(), it will be called above.
+  // (Leaving it undefined won’t break anything due to the guard.)
+});
+</script>
+</body>
+</html>
