@@ -23,24 +23,26 @@
         /**
          * Handle an incoming registration request.
          */
+
         public function store(Request $request)
         {
             $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+                'name'     => ['required', 'string', 'max:255'],
+                'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
             ]);
 
-            // Use Breeze defaults: name, email, password
-            $user = User::create([
+    // Use Breeze defaults: name, email, password
+             $user = User::create([
                 'name'     => $request->name,
                 'email'    => $request->email,
                 'password' => Hash::make($request->password),
             ]);
 
-            event(new Registered($user));
+             event(new Registered($user));
+
             Auth::login($user);
 
             return redirect()->intended(route('home', absolute: false));
         }
-    }
+}
