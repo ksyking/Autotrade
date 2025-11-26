@@ -1,4 +1,125 @@
 <x-app-layout>
+    {{-- Page-local styles: make buyer dashboard match home.blade.php --}}
+    @push('styles')
+        <style>
+            :root {
+                --at-bg: #050813;
+                --at-panel: #343a43;
+                --at-panel-soft: #292f38;
+                --at-panel-border: rgba(255, 255, 255, .08);
+                --at-accent: #1e88ff;
+                --at-accent-soft: rgba(30, 136, 255, 0.2);
+                --at-text-main: #f5f7ff;
+                --at-text-soft: #b3b9c7;
+                --at-chip-bg: #414852;
+            }
+
+            /* Match home.blade.php body typography + colors */
+            .at-shell {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                color: var(--at-text-main);
+            }
+
+            /* Match home.blade.php background gradient */
+            .at-shell-bg {
+                min-height: 100vh;
+                background:
+                    radial-gradient(circle at top left, #28303d 0, transparent 55%),
+                    radial-gradient(circle at bottom right, #161b25 0, transparent 60%),
+                    radial-gradient(circle at top right, #202633 0, transparent 55%),
+                    var(--at-bg);
+            }
+
+            /* Match navbar look from home.blade.php (.navbar-autotrade) */
+            .at-topnav {
+                background: linear-gradient(120deg, #050813 0, #050715 55%, #111827 100%);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, .65);
+            }
+
+            /* AUTOTRADE badge + wordmark (same proportions as home) */
+            .nav-brand-badge {
+                height: 32px;
+                width: 32px;
+                flex-shrink: 0;
+            }
+
+            .nav-brand-wordmark {
+                height: 40px;                  /* same layout height */
+                object-fit: contain;
+                filter: drop-shadow(0 0 6px rgba(0,0,0,.7));
+
+                transform: scale(5.0);         /* visually enlarged */
+                transform-origin: left center; /* expand outward, not downward */
+            }
+
+            .nav-brand-wordmark-fallback {
+                letter-spacing: .18em;
+            }
+
+            /* Match .home-shell from home.blade.php for vertical rhythm */
+            .dashboard-shell {
+                padding: 1.75rem 0 3rem;
+            }
+
+            /* Dashboard panels: clone .filters-card / .result-card look */
+            .at-card {
+                background:
+                    linear-gradient(145deg, #474d56, #2f343c);
+                border-radius: 20px;
+                border: 1px solid var(--at-panel-border);
+                box-shadow:
+                    0 18px 40px rgba(0, 0, 0, .7),
+                    0 0 0 1px rgba(255, 255, 255, .02);
+                color: var(--at-text-main);
+            }
+
+            /* Pill Buttons (white outline) */
+.at-pill {
+    padding: 6px 16px;
+    border-radius: 9999px;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    font-size: 0.875rem;
+    transition: 0.2s ease;
+}
+.at-pill:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Active pill (blue underline highlight like homepage) */
+.at-pill-active {
+    border-color: #1e88ff;
+    color: #1e88ff;
+}
+
+/* Blue pill button (List a Vehicle) */
+.at-pill-blue {
+    padding: 6px 16px;
+    border-radius: 9999px;
+    background: #1e88ff;
+    color: #fff;
+    font-size: 0.875rem;
+    transition: 0.2s ease;
+}
+.at-pill-blue:hover {
+    background: #3d9aff;
+}
+
+/* Compare badge */
+.compare-badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    font-size: 10px;
+    background: #ff4d4f;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 999px;
+}
+        </style>
+    @endpush
+
     {{-- Header bar title, centered to same width as content --}}
     <x-slot name="header">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -8,8 +129,8 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        {{-- MAIN COLUMN: matches home content width --}}
+    {{-- MAIN COLUMN: matches home content width --}}
+    <div class="py-10 dashboard-shell">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             {{-- Welcome --}}
