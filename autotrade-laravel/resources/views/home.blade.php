@@ -578,11 +578,30 @@
                                 @endif
                             </div>
                         </div>
-                        <button type="button"
-                                class="btn btn-outline-light btn-sm compare-btn {{ in_array($l->id, session('compare_ids', [])) ? 'compare-active' : '' }}"
-                                data-compare-id="{{ $l->id }}">
-                            {{ in_array($l->id, session('compare_ids', [])) ? 'Added' : 'Compare' }}
-                        </button>
+
+                        {{-- Right: Save + Compare actions --}}
+                        <div class="d-flex flex-column align-items-end gap-2">
+                            @auth
+                                {{-- Save listing to watchlist via AJAX, stay on home --}}
+                                <button type="button"
+                                        class="btn btn-outline-light btn-sm rounded-pill px-3 save-watchlist-btn"
+                                        data-listing-id="{{ $l->id }}">
+                                    Save
+                                </button>
+                            @else
+                                <a href="{{ route('login') }}"
+                                   class="btn btn-outline-light btn-sm rounded-pill px-3">
+                                    Save
+                                </a>
+                            @endauth
+
+                            {{-- Existing Compare button --}}
+                            <button type="button"
+                                    class="btn btn-outline-light btn-sm compare-btn {{ in_array($l->id, session('compare_ids', [])) ? 'compare-active' : '' }}"
+                                    data-compare-id="{{ $l->id }}">
+                                {{ in_array($l->id, session('compare_ids', [])) ? 'Added' : 'Compare' }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             @empty
@@ -665,12 +684,51 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.body.addEventListener('click', (e) => {
-        const btn = e.target.closest('.compare-btn');
-        if (btn) {
-            const id = parseInt(btn.dataset.compareId, 10);
+        const compareBtn = e.target.closest('.compare-btn');
+        if (compareBtn) {
+            const id = parseInt(compareBtn.dataset.compareId, 10);
             toggleCompare(id);
+            return;
+        }
+
+        const saveBtn = e.target.closest('.save-watchlist-btn');
+        if (saveBtn) {
+            const listingId = parseInt(saveBtn.dataset.listingId, 10);
+            saveListingToWatchlist(saveBtn, listingId);
         }
     });
+
+    async function saveListingToWatchlist(btn, listingId) {
+        try {
+            const res = await fetch("{{ url('/buyer/listings') }}/" + listingId + "/save", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (res.status === 401 || res.status === 419) {
+                // Session issue or unauth: go to login
+                window.location.href = "{{ route('login') }}";
+                return;
+            }
+
+            if (!res.ok) {
+                alert('Could not save to watchlist.');
+                return;
+            }
+
+            const data = await res.json();
+            if (data.ok) {
+                btn.textContent = 'Saved';
+                btn.disabled = true;
+                btn.classList.add('compare-active');
+            }
+        } catch (e) {
+            alert('Could not save to watchlist.');
+        }
+    }
 
     if (drawerClear) {
         drawerClear.addEventListener('click', async () => {

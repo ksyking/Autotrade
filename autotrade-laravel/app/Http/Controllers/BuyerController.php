@@ -121,7 +121,8 @@ class BuyerController extends Controller
     }
 
     /**
-     * Toggle favorite (watchlist) for a vehicle via POST.
+     * Toggle favorite (watchlist) for a VEHICLE via POST (used in buyer/vehicles).
+     * This one still redirects back to the vehicle browser.
      */
     public function toggleFavorite($vehicleId)
     {
@@ -150,6 +151,47 @@ class BuyerController extends Controller
     }
 
     /**
+     * NEW: Save a LISTING from the homepage to the watchlist via AJAX.
+     * - Does NOT redirect
+     * - Uses the underlying listing->vehicle_id to populate favorites
+     */
+    public function saveListing(Request $request, int $listing)
+    {
+        $userId = Auth::id();
+
+        // Resolve listing -> vehicle_id
+        $vehicleId = DB::table('listings')
+            ->where('id', $listing)
+            ->value('vehicle_id');
+
+        if (!$vehicleId) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Listing not found.',
+            ], 404);
+        }
+
+        // Idempotent "save": ensure row exists; do NOT toggle/remove here.
+        DB::table('favorites')->updateOrInsert(
+            [
+                'user_id'    => $userId,
+                'vehicle_id' => (int) $vehicleId,
+            ],
+            [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        return response()->json([
+            'ok'         => true,
+            'status'     => 'saved',
+            'listing_id' => $listing,
+            'vehicle_id' => (int) $vehicleId,
+        ]);
+    }
+
+    /**
      * Remove favorite explicitly via DELETE (used by watchlist page).
      */
     public function unfavorite($vehicleId)
@@ -163,29 +205,54 @@ class BuyerController extends Controller
     }
 
     /**
-     * Show current user's watchlist (favorites joined to vehicles).
+     * Show current user's watchlist (favorites joined to vehicles + listings).
      */
-    public function watchlist(Request $request)
+    public function watchlist()
     {
-        $vehicles = DB::table('favorites')
-            ->join('vehicles', 'vehicles.id', '=', 'favorites.vehicle_id')
-            ->where('favorites.user_id', Auth::id())
-            ->select('vehicles.*')
-            ->orderByDesc('vehicles.year')
-            ->paginate(12);
+        $userId = Auth::id();
 
-        return view('buyer.watchlist', compact('vehicles'));
+        $entries = DB::table('favorites as f')
+            ->join('vehicles as v', 'v.id', '=', 'f.vehicle_id')
+            ->leftJoin('listings as l', 'l.vehicle_id', '=', 'v.id')
+            ->where('f.user_id', $userId)
+            ->select(
+                'v.id as vehicle_id',
+                'v.year',
+                'v.make',
+                'v.model',
+                'v.trim',
+                'v.body_type',
+                'v.drivetrain',
+                'v.fuel_type',
+                'v.transmission',
+
+                'l.id as listing_id',
+                'l.title',
+                'l.price',
+                'l.mileage',
+                'l.city',
+                'l.state',
+                'l.condition_grade',
+                'l.is_active',
+                'l.created_at as listing_created_at'
+            )
+            ->orderByDesc('listing_created_at')
+            ->paginate(10);
+
+        return view('buyer.watchlist', [
+            'entries' => $entries,
+        ]);
     }
 
     /**
-     * JSON endpoint for live watchlist count.
+     * NEW: live JSON count of watchlist items (used by buyer dashboard JS).
      */
-    public function watchlistCount(Request $request)
+    public function watchlistCount()
     {
         $count = DB::table('favorites')
             ->where('user_id', Auth::id())
             ->count();
 
-        return response()->json(['count' => $count], 200);
+        return response()->json(['count' => $count]);
     }
 }
