@@ -1,53 +1,139 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Seller Dashboard • AUTOTRADE</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<nav class="navbar navbar-dark bg-dark">
-  <div class="container d-flex justify-content-between">
-    <a href="{{ route('home') }}" class="navbar-brand">AUTOTRADE</a>
-    <div class="d-flex gap-2">
-      <a href="{{ route('listings.create') }}" class="btn btn-outline-light btn-sm">List a Vehicle</a>
-      <a href="{{ route('buyer.dashboard') }}" class="btn btn-outline-light btn-sm">Buyer Dashboard</a>
-    </div>
-  </div>
-</nav>
-
-<main class="container py-4">
-  @if(session('ok'))
-    <div class="alert alert-success">{{ session('ok') }}</div>
-  @endif
-
-  <div class="d-flex justify-content-between align-items-center">
-    <h1 class="h4 mb-3">My Listings</h1>
-    <a href="{{ route('listings.create') }}" class="btn btn-primary btn-sm">+ New Listing</a>
-  </div>
-
-  <div class="vstack gap-3">
-    @forelse($myListings as $l)
-      <div class="card">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <div>
-            <div class="fw-semibold">{{ $l->year }} {{ $l->make }} {{ $l->model }}</div>
-            <div class="text-muted small">{{ $l->title }}</div>
-            <div class="mt-1 d-flex gap-2 flex-wrap">
-              <span class="badge bg-light text-dark">Price: ${{ number_format($l->price, 2) }}</span>
-              <span class="badge bg-light text-dark">Mileage: {{ number_format($l->mileage) }} mi</span>
-              <span class="badge bg-secondary">{{ $l->body_type }}</span>
-              <span class="badge bg-secondary">{{ $l->is_active ? 'Active' : 'Inactive' }}</span>
+<x-app-layout>
+    {{-- Page header --}}
+    <x-slot name="header">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="font-semibold text-xl text-slate-100 leading-tight">
+                    Seller Dashboard
+                </h2>
+                <p class="text-sm text-slate-400 mt-1">
+                    Manage your vehicle listings and their status.
+                </p>
             </div>
-          </div>
-          <span class="text-muted small">{{ $l->city }}, {{ $l->state }}</span>
+
+            {{-- Add New Listing button (links to your existing listings.create route) --}}
+            <a
+                href="{{ route('listings.create') }}"
+                class="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-semibold shadow-[0_0_18px_rgba(79,70,229,0.6)] hover:shadow-[0_0_26px_rgba(79,70,229,0.9)] transition"
+            >
+                Add New Listing
+            </a>
         </div>
-      </div>
-    @empty
-      <div class="alert alert-secondary">You don’t have any listings yet.</div>
-    @endforelse
-  </div>
-</main>
-</body>
-</html>
+    </x-slot>
+
+    @php
+        // Dummy listings just for UI — replace with real data later
+        $listings = [
+            [
+                'id'     => 1,
+                'title'  => '2021 Sport Sedan',
+                'status' => 'active',
+            ],
+            [
+                'id'     => 2,
+                'title'  => '2018 Compact SUV',
+                'status' => 'inactive',
+            ],
+        ];
+    @endphp
+
+    <div class="py-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                {{-- Left column: Listed cards --}}
+                <div class="bg-slate-900/70 border border-slate-700/70 rounded-2xl shadow-xl backdrop-blur-sm">
+                    <div class="px-6 py-4 border-b border-slate-700/70 flex items-center justify-between">
+                        <h3 class="text-sm font-semibold tracking-wide text-slate-300 uppercase">
+                            Listed
+                        </h3>
+                        <span class="text-xs text-slate-500">
+                            {{ count($listings) }} total
+                        </span>
+                    </div>
+
+                    <div class="divide-y divide-slate-800/70">
+                        @foreach ($listings as $listing)
+                            <div class="flex items-center gap-4 px-6 py-4">
+                                {{-- Thumbnail placeholder --}}
+                                <div
+                                    class="w-24 h-20 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 flex items-center justify-center text-slate-500 text-xs uppercase tracking-wide"
+                                >
+                                    Photo
+                                </div>
+
+                                <div class="flex-1">
+                                    <div class="text-slate-100 font-semibold text-sm">
+                                        {{ $listing['title'] }}
+                                    </div>
+                                    <div class="text-xs text-slate-500 mt-1">
+                                        Listing ID: #{{ $listing['id'] }}
+                                    </div>
+
+                                    <div class="mt-3 flex gap-2">
+                                        <button
+                                            type="button"
+                                            class="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-800 text-slate-100 border border-slate-600 hover:border-indigo-400 hover:text-indigo-300 transition"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="px-3 py-1.5 text-xs font-medium rounded-full bg-red-500/10 text-red-300 border border-red-500/60 hover:bg-red-500/20 transition"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+
+                        @if(empty($listings))
+                            <div class="px-6 py-8 text-center text-slate-500 text-sm">
+                                You don’t have any listings yet. Click <span class="font-semibold text-indigo-300">Add New Listing</span> to create one.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Right column: Status list --}}
+                <div class="bg-slate-900/70 border border-slate-700/70 rounded-2xl shadow-xl backdrop-blur-sm">
+                    <div class="px-6 py-4 border-b border-slate-700/70">
+                        <h3 class="text-sm font-semibold tracking-wide text-slate-300 uppercase">
+                            Status
+                        </h3>
+                    </div>
+
+                    <div class="divide-y divide-slate-800/70">
+                        @foreach ($listings as $listing)
+                            @php
+                                $isActive = $listing['status'] === 'active';
+                            @endphp
+                            <div class="px-6 py-4 flex items-center justify-between">
+                                <div class="text-sm text-slate-100">
+                                    {{ $listing['title'] }}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-slate-400">
+                                        {{ $isActive ? 'Active' : 'Inactive' }}
+                                    </span>
+                                    <span
+                                        class="inline-flex w-2.5 h-2.5 rounded-full
+                                            {{ $isActive
+                                                ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]'
+                                                : 'bg-slate-500 shadow-[0_0_8px_rgba(148,163,184,0.7)]' }}"
+                                    ></span>
+                                </div>
+                            </div>
+                        @endforeach
+
+                        @if(empty($listings))
+                            <div class="px-6 py-8 text-center text-slate-500 text-sm">
+                                No listings yet – status will appear here once you add vehicles.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
