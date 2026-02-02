@@ -19,6 +19,49 @@
             --at-text-soft: #b3b9c7;
             --at-chip-bg: #414852;
         }
+        /* Collapsible Filters */
+    .filters-collapsible {
+        overflow: hidden;
+        max-height: 110px;                 /* shows title + subtitle only */
+        transition: max-height .25s ease;
+        position: relative;
+        }
+
+/* Hide the actual filter inputs when collapsed */
+    .filters-collapsible .filters-body {
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity .2s ease, transform .2s ease;
+        pointer-events: none;              /* prevents clicking hidden inputs */
+    }
+
+/* Expand on hover */
+    .filters-collapsible:hover {
+         max-height: 1200px;                /* big enough for your whole form */
+    }
+    .filters-collapsible:hover .filters-body {
+         opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+/* If filters are already applied, keep it expanded */
+.filters-expanded {
+  max-height: 1200px !important;
+}
+.filters-expanded .filters-body {
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+
+/* Mobile: hover doesn’t exist, so keep filters open */
+@media (max-width: 768px) {
+  .filters-collapsible { max-height: 1200px; }
+  .filters-collapsible .filters-body {
+    opacity: 1; transform: none; pointer-events: auto;
+  }
+}
 
         body {
             min-height: 100vh;
@@ -356,12 +399,24 @@
     </section>
 
     {{-- SEARCH / FILTERS --}}
-    <form id="filterForm" method="GET" action="{{ route('home') }}" class="filters-card card border-0 mb-4">
-        <div class="card-body">
-            <div class="filters-title">Search &amp; Filters</div>
-            <div class="filters-subtitle mb-3">
-                Search by make, model, title, or seller. Use additional filters to narrow your results.
-            </div>
+@php
+  $hasFilters = collect(request()->except(['page']))
+      ->filter(fn($v) => $v !== null && $v !== '')
+      ->isNotEmpty();
+@endphp
+
+<form id="filterForm"
+      method="GET"
+      action="{{ route('home') }}"
+      class="filters-card card border-0 mb-4 filters-collapsible {{ $hasFilters ? 'filters-expanded' : '' }}">
+    <div class="card-body">
+        <div class="filters-title">Search &amp; Filters</div>
+        <div class="filters-subtitle mb-3">
+            Search by make, model, title, or seller. Use additional filters to narrow your results.
+        </div>
+
+        <div class="filters-body">
+
 
             <div class="row g-3 align-items-end">
                 <div class="col-12">
@@ -544,9 +599,11 @@
                     <a href="{{ route('home') }}" class="btn btn-at-ghost">Reset</a>
                 </div>
 
-            </div>
-        </div>
-    </form>
+            </div> <!-- closes .row -->
+        </div> <!-- closes .filters-body -->
+    </div> <!-- closes .card-body -->
+</form>
+
 
     {{-- RESULTS --}}
     <div class="d-flex justify-content-between align-items-center mb-2">
