@@ -8,6 +8,48 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
+
+        .filters-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+}
+
+.filters-hint{
+  font-size:.8rem;
+  color: var(--at-text-soft);
+  margin-top:.15rem;
+}
+
+.filters-toggle{
+  width:38px;
+  height:38px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.18);
+  background: rgba(0,0,0,.12);
+  box-shadow: 0 10px 25px rgba(0,0,0,.25);
+}
+
+.filters-toggle .chev{
+  width:10px;
+  height:10px;
+  border-right:2px solid rgba(255,255,255,.75);
+  border-bottom:2px solid rgba(255,255,255,.75);
+  transform: rotate(45deg); /* down arrow */
+  transition: transform .2s ease, opacity .2s ease;
+  opacity:.9;
+}
+
+/* rotate arrow when expanded (hover OR has filters) */
+.filters-collapsible:hover .filters-toggle .chev,
+.filters-expanded .filters-toggle .chev{
+  transform: rotate(225deg); /* up arrow */
+}
+
         :root {
             --at-bg: #050813;
             --at-panel: #343a43;
@@ -21,11 +63,18 @@
         }
         /* Collapsible Filters */
     .filters-collapsible {
-        overflow: hidden;
-        max-height: 110px;                 /* shows title + subtitle only */
-        transition: max-height .25s ease;
-        position: relative;
-        }
+  overflow: hidden;
+  max-height: 72px; /* tighter collapsed height */
+  transition: max-height .25s ease;
+  position: relative;
+}
+/* tighten padding when collapsed */
+.filters-collapsible:not(.filters-expanded) .card-body {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+
 
 /* Hide the actual filter inputs when collapsed */
     .filters-collapsible .filters-body {
@@ -410,12 +459,25 @@
       action="{{ route('home') }}"
       class="filters-card card border-0 mb-4 filters-collapsible {{ $hasFilters ? 'filters-expanded' : '' }}">
     <div class="card-body">
-        <div class="filters-title">Search &amp; Filters</div>
-        <div class="filters-subtitle mb-3">
-            Search by make, model, title, or seller. Use additional filters to narrow your results.
+
+    <div class="filters-top">
+        <div class="filters-top-left">
+            <div class="filters-title mb-0">Search &amp; Filters</div>
+            <div class="filters-hint">
+                Hover to expand filters
+                @if($hasFilters)
+                    <span class="ms-2 chip">Filters active</span>
+                @endif
+            </div>
         </div>
 
-        <div class="filters-body">
+       <div class="filters-toggle" aria-hidden="true" title="Hover to expand">
+    <span class="chev"></span>
+</div>
+
+    </div>
+
+    <div class="filters-body mt-3">
 
 
             <div class="row g-3 align-items-end">
