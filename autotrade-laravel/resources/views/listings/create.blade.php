@@ -234,9 +234,17 @@
                 </button>
             </div>
 
+            {{-- General error (transaction / server side) --}}
+            @if ($errors->has('general'))
+                <div class="alert alert-danger mb-4">
+                    {{ $errors->first('general') }}
+                </div>
+            @endif
+
             <form id="create-listing-form"
                   method="POST"
                   action="{{ route('listings.store') }}"
+                  enctype="multipart/form-data"
                   class="vstack gap-4">
                 @csrf
 
@@ -481,6 +489,28 @@
                                 @error('condition_grade') <div class="at-error-text">{{ $message }}</div> @enderror
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                {{-- PHOTOS --}}
+                <section class="mb-3">
+                    <div class="mb-3">
+                        <div class="at-section-title">Photos</div>
+                        <div class="at-section-sub">
+                            Upload up to 5 images. The first image becomes the primary photo.
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="at-field-label" for="photos">Listing Photos</label>
+                        <input id="photos" name="photos[]" type="file"
+                               accept="image/*"
+                               multiple
+                               class="at-input">
+                        <div class="at-help-text">JPG/PNG/WebP recommended. Max 5MB each.</div>
+
+                        @error('photos') <div class="at-error-text">{{ $message }}</div> @enderror
+                        @error('photos.*') <div class="at-error-text">{{ $message }}</div> @enderror
                     </div>
                 </section>
 

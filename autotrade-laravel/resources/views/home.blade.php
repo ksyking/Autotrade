@@ -352,6 +352,38 @@
             box-shadow: 0 0 0 1px rgba(30, 136, 255, .45);
         }
 
+        /* THUMBNAIL (NEW) */
+        .result-thumb {
+            width: 140px;
+            height: 95px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top left, rgba(255, 255, 255, .18) 0, transparent 55%),
+                #1a1f28;
+            flex-shrink: 0;
+        }
+
+        .result-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .result-thumb-fallback {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            color: var(--at-text-soft);
+        }
+
         /* STICKY COMPARE DRAWER */
         #compareDrawer {
             position: fixed;
@@ -680,9 +712,24 @@
     @isset($listings)
         <div id="results" class="vstack gap-3">
             @forelse ($listings as $l)
+                @php
+                    $thumb = $l->primary_photo_url ?? null;
+                @endphp
+
                 <div class="card result-card border-0 shadow-sm">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
+                    <div class="card-body d-flex gap-3 align-items-center">
+
+                        {{-- LEFT: PHOTO --}}
+                        <div class="result-thumb">
+                            @if($thumb)
+                                <img src="{{ $thumb }}" alt="Vehicle photo">
+                            @else
+                                <div class="result-thumb-fallback">PHOTO</div>
+                            @endif
+                        </div>
+
+                        {{-- MIDDLE: DETAILS --}}
+                        <div class="flex-grow-1">
                             <div class="result-title">{{ $l->year }} {{ $l->make }} {{ $l->model }}</div>
                             <div class="result-subtitle">{{ $l->title }}</div>
                             <div class="mt-2 d-flex flex-wrap gap-2">
@@ -698,7 +745,7 @@
                             </div>
                         </div>
 
-                        {{-- Right: Save + Compare actions --}}
+                        {{-- RIGHT: Save + Compare actions --}}
                         <div class="d-flex flex-column align-items-end gap-2">
                             @auth
                                 {{-- Save listing to watchlist via AJAX, stay on home --}}

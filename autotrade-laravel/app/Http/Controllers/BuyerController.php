@@ -234,7 +234,11 @@ class BuyerController extends Controller
                 'l.state',
                 'l.condition_grade',
                 'l.is_active',
-                'l.created_at as listing_created_at'
+                'l.created_at as listing_created_at',
+
+                // ✅ ADD THESE so watchlist can render the image
+                'l.primary_photo_url',
+                'l.primary_photo_key'
             )
             ->orderByDesc('listing_created_at')
             ->paginate(10);

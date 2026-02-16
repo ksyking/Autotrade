@@ -56,19 +56,30 @@ class SearchController extends Controller
                 'listings.id','listings.title','listings.price','listings.mileage',
                 'listings.city','listings.state','listings.color_ext','listings.color_int',
                 'listings.condition_grade','listings.created_at',
+
+                // photo fields
+                'listings.primary_photo_url',
+                'listings.primary_photo_key',
+
                 'vehicles.make','vehicles.model','vehicles.year','vehicles.body_type',
                 'vehicles.drivetrain','vehicles.fuel_type','vehicles.transmission'
             )
             ->where('listings.is_active', 1);
 
-        // Free-text search
+        // Free-text search (professor recommendation)
+        // Use the aggregated listing search_text for max match coverage.
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $like = "%{$q}%";
-                $w->where('listings.title','like',$like)
-                  ->orWhere('vehicles.make','like',$like)
-                  ->orWhere('vehicles.model','like',$like)
-                  ->orWhere('users.display_name','like',$like);
+
+                // Primary search: aggregated field on listings
+                $w->where('listings.search_text', 'like', $like)
+
+                  // Fallbacks: if search_text isn’t populated on some older rows, or user searches seller name
+                  ->orWhere('listings.title', 'like', $like)
+                  ->orWhere('vehicles.make', 'like', $like)
+                  ->orWhere('vehicles.model', 'like', $like)
+                  ->orWhere('users.display_name', 'like', $like);
             });
         }
 
@@ -138,19 +149,25 @@ class SearchController extends Controller
                 'listings.id','listings.title','listings.price','listings.mileage',
                 'listings.city','listings.state','listings.color_ext','listings.color_int',
                 'listings.condition_grade','listings.created_at',
+
+                // photo fields
+                'listings.primary_photo_url',
+                'listings.primary_photo_key',
+
                 'vehicles.make','vehicles.model','vehicles.year','vehicles.body_type',
                 'vehicles.drivetrain','vehicles.fuel_type','vehicles.transmission'
             )
             ->where('listings.is_active', 1);
 
-        // Same filters as index()
+        // Same free-text behavior as index()
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $like = "%{$q}%";
-                $w->where('listings.title','like',$like)
-                  ->orWhere('vehicles.make','like',$like)
-                  ->orWhere('vehicles.model','like',$like)
-                  ->orWhere('users.display_name','like',$like);
+                $w->where('listings.search_text', 'like', $like)
+                  ->orWhere('listings.title', 'like', $like)
+                  ->orWhere('vehicles.make', 'like', $like)
+                  ->orWhere('vehicles.model', 'like', $like)
+                  ->orWhere('users.display_name', 'like', $like);
             });
         }
 
@@ -191,6 +208,11 @@ class SearchController extends Controller
             ->join('vehicles as v','v.id','=','l.vehicle_id')
             ->select(
                 'l.*',
+
+                // photo fields
+                'l.primary_photo_url',
+                'l.primary_photo_key',
+
                 'v.make','v.model','v.year','v.body_type','v.drivetrain','v.fuel_type','v.transmission'
             )
             ->where('l.id',$id)

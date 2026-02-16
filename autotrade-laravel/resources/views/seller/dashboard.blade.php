@@ -171,6 +171,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+        }
+
+        .seller-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         .seller-row-main-title {
@@ -363,14 +371,25 @@
 
             <div class="seller-card-body">
                 @forelse ($myListings as $listing)
+                    @php
+                        $titleText = $listing->title ?: ($listing->year . ' ' . $listing->make . ' ' . $listing->model);
+                        $photoUrl = $listing->primary_photo_url;
+                    @endphp
+
                     <div class="seller-row">
                         <div class="seller-photo">
-                            PHOTO
+                            @if (!empty($photoUrl))
+                                <img src="{{ $photoUrl }}" alt="Listing photo">
+                            @else
+                                PHOTO
+                            @endif
                         </div>
+
                         <div class="flex-grow-1">
                             <div class="seller-row-main-title">
-                                {{ $listing->title ?: ($listing->year . ' ' . $listing->make . ' ' . $listing->model) }}
+                                {{ $titleText }}
                             </div>
+
                             <div class="seller-row-sub">
                                 Listing ID: #{{ $listing->id }}
                                 &middot;
@@ -379,6 +398,7 @@
                                     &middot; {{ $listing->body_type }}
                                 @endif
                             </div>
+
                             <div class="seller-row-meta">
                                 @if (!is_null($listing->mileage))
                                     Mileage: {{ number_format($listing->mileage) }} mi &middot;
@@ -442,3 +462,4 @@
 
 </body>
 </html>
+

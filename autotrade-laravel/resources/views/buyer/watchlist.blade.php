@@ -125,6 +125,33 @@
             color: #e6e9f2;
             border: 1px solid rgba(255, 255, 255, .12);
         }
+
+        /* ✅ Photo thumb styles (matches your overall vibe) */
+        .watch-photo {
+            width: 5rem;
+            height: 4rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            background:
+                radial-gradient(circle at top left, rgba(255, 255, 255, .18) 0, transparent 55%),
+                #1a1f28;
+            overflow: hidden;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            color: var(--at-text-soft);
+        }
+
+        .watch-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -223,11 +250,34 @@
                 @foreach ($entries as $v)
                     @php
                         $hasListing = !is_null($v->listing_id);
+
+                        // ✅ Choose image URL:
+                        // 1) primary_photo_url if present (your DB stores full http://127.0.0.1:8000/... which works)
+                        // 2) else try primary_photo_key -> /storage/<key>
+                        $img = null;
+                        if (!empty($v->primary_photo_url)) {
+                            $img = $v->primary_photo_url;
+                        } elseif (!empty($v->primary_photo_key)) {
+                            $img = asset('storage/' . ltrim($v->primary_photo_key, '/'));
+                        }
                     @endphp
 
                     <div class="card result-card border-0 shadow-sm">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
+                        <div class="card-body d-flex justify-content-between align-items-center gap-3">
+                            {{-- ✅ LEFT: Photo --}}
+                            <div class="watch-photo">
+                                @if ($img)
+                                    <img src="{{ $img }}"
+                                         alt="Listing photo"
+                                         loading="lazy"
+                                         onerror="this.remove(); this.parentElement.textContent='PHOTO';">
+                                @else
+                                    PHOTO
+                                @endif
+                            </div>
+
+                            {{-- ✅ MIDDLE: Info --}}
+                            <div class="flex-grow-1">
                                 <div class="result-title mb-1">
                                     {{ $v->year }} {{ $v->make }} {{ $v->model }}
                                     @if(!empty($v->trim))
@@ -280,6 +330,7 @@
                                 </div>
                             </div>
 
+                            {{-- ✅ RIGHT: Actions --}}
                             <div class="text-end">
                                 <form method="POST" action="{{ route('buyer.unfavorite', $v->vehicle_id) }}" class="mb-2">
                                     @csrf
